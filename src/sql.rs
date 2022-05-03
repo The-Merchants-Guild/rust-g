@@ -9,7 +9,7 @@ use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde_json::{json, map::Map, Number};
 use std::sync::atomic::AtomicUsize;
-use std::{error::Error, time::Duration, path::Path};
+use std::{error::Error, path::Path, time::Duration};
 
 // ----------------------------------------------------------------------------
 // Interface
@@ -114,8 +114,7 @@ fn get_ssl_opts(enabled: u8) -> Option<mysql::SslOpts> {
     if enabled == 0 {
         None
     } else {
-        Some(mysql::SslOpts::default()
-            .with_root_cert_path(Some(Path::new("ca.pem"))))
+        Some(mysql::SslOpts::default().with_root_cert_path(Some(Path::new("ca.pem"))))
     }
 }
 
