@@ -9,7 +9,7 @@ use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde_json::{json, map::Map, Number};
 use std::sync::atomic::AtomicUsize;
-use std::{error::Error, time::Duration};
+use std::{error::Error, time::Duration, path::Path};
 
 // ----------------------------------------------------------------------------
 // Interface
@@ -26,6 +26,7 @@ struct ConnectOptions {
     user: Option<String>,
     pass: Option<String>,
     db_name: Option<String>,
+    db_ssl: Option<u8>,
     read_timeout: Option<f32>,
     write_timeout: Option<f32>,
     min_threads: Option<usize>,
@@ -109,7 +110,19 @@ byond_fn!(fn sql_check_query(id) {
 static POOL: Lazy<DashMap<usize, Pool>> = Lazy::new(DashMap::new);
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
 
+fn get_ssl_opts(enabled: u8) -> Option<mysql::SslOpts> {
+    if enabled == 0 {
+        None
+    } else {
+        Some(mysql::SslOpts::default()
+            .with_root_cert_path(Some(Path::new("ca.pem")))
+            .with_pkcs12_path(Some(Path::new("cert.p12"))))
+    }
+}
+
 fn sql_connect(options: ConnectOptions) -> Result<serde_json::Value, Box<dyn Error>> {
+    let ssl_opts: Option<mysql::SslOpts> = get_ssl_opts(options.db_ssl.unwrap_or(0));
+
     let builder = OptsBuilder::new()
         .ip_or_hostname(options.host)
         .tcp_port(options.port.unwrap_or(DEFAULT_PORT))
@@ -120,7 +133,8 @@ fn sql_connect(options: ConnectOptions) -> Result<serde_json::Value, Box<dyn Err
         .pass(options.pass)
         .db_name(options.db_name)
         .read_timeout(options.read_timeout.map(Duration::from_secs_f32))
-        .write_timeout(options.write_timeout.map(Duration::from_secs_f32));
+        .write_timeout(options.write_timeout.map(Duration::from_secs_f32))
+        .ssl_opts(ssl_opts);
 
     let pool = Pool::new_manual(
         options.min_threads.unwrap_or(DEFAULT_MIN_THREADS),
