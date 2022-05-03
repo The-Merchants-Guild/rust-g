@@ -115,8 +115,7 @@ fn get_ssl_opts(enabled: u8) -> Option<mysql::SslOpts> {
         None
     } else {
         Some(mysql::SslOpts::default()
-            .with_root_cert_path(Some(Path::new("ca.pem")))
-            .with_pkcs12_path(Some(Path::new("cert.p12"))))
+            .with_root_cert_path(Some(Path::new("ca.pem"))))
     }
 }
 
